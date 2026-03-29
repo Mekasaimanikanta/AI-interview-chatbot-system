@@ -8,6 +8,10 @@ import httpx
 import os
 import json
 import re
+import smtplib
+import random
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -105,6 +109,19 @@ def get_current_user(authorization: Optional[str] = Header(default=None)):
 
 
 # ─── Auth Models ──────────────────────────────────────────────────────────────
+OTP_DB = {}
+
+def send_otp_email(email, otp):
+    sender = "mekasaimanikantams4@gmail@gmail.com"
+    password = os.getenv("GMAIL_APP_PASSWORD")
+    msg = MIMEMultipart()
+    msg["From"] = sender
+    msg["To"] = email
+    msg["Subject"] = "Your OTP for AI Interview"
+    msg.attach(MIMEText(f"Your OTP is: {otp}", "plain"))
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+        server.login(sender, password)
+        server.send_message(msg)
 class SignupRequest(BaseModel):
     name: str
     email: str
@@ -117,25 +134,29 @@ class LoginRequest(BaseModel):
 
 
 # ─── Auth Endpoints ───────────────────────────────────────────────────────────
-@app.post("/auth/signup")
-async def signup(req: SignupRequest):
+@app.post("/auth/send-otp")
+async def send_otp(req: SignupRequest):
     if req.email in USERS_DB:
         raise HTTPException(status_code=400, detail="Email already registered")
+    otp = str(random.randint(100000, 999999))
+    OTP_DB[req.email] = {"otp": otp, "data": req}
+    send_otp_email(req.email, otp)
+    return {"message": "OTP sent to your email"}
+
+@app.post("/auth/signup")
+async def signup(email: str = "", otp: str = ""):
+    if email not in OTP_DB:
+        raise HTTPException(status_code=400, detail="OTP not found")
+    if OTP_DB[email]["otp"] != otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    req = OTP_DB[email]["data"]
     uid = "u" + str(uuid.uuid4())[:8]
-    USERS_DB[req.email] = {"id":uid,"name":req.name,"email":req.email,"role":req.role,"pw":hash_pw(req.password)}
+    USERS_DB[req.email] = {"id": uid, "name": req.name, "email": req.email, "role": req.role, "pw": hash_pw(req.password)}
     token = str(uuid.uuid4())
     TOKENS_DB[token] = uid
     u = USERS_DB[req.email]
-    return {"token": token, "user": {"id":u["id"],"name":u["name"],"email":u["email"],"role":u["role"]}}
-
-@app.post("/auth/login")
-async def login(req: LoginRequest):
-    u = USERS_DB.get(req.email)
-    if not u or u["pw"] != hash_pw(req.password):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = str(uuid.uuid4())
-    TOKENS_DB[token] = u["id"]
-    return {"token": token, "user": {"id":u["id"],"name":u["name"],"email":u["email"],"role":u["role"]}}
+    del OTP_DB[email]
+    return {"token": token, "user": {"id": u["id"], "name": u["name"], "email": u["email"], "role": u["role"]}}
 
 @app.post("/auth/logout")
 async def logout(authorization: Optional[str] = Header(default=None)):
