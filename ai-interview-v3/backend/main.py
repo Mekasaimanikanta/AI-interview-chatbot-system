@@ -112,7 +112,7 @@ def get_current_user(authorization: Optional[str] = Header(default=None)):
 OTP_DB = {}
 
 def send_otp_email(email, otp):
-    sender = "mekasaimanikantams4@gmail@gmail.com"
+    sender = "mekasaimanikantams4@gmail.com"
     password = os.getenv("GMAIL_APP_PASSWORD")
     msg = MIMEMultipart()
     msg["From"] = sender
@@ -140,8 +140,11 @@ async def send_otp(req: SignupRequest):
         raise HTTPException(status_code=400, detail="Email already registered")
     otp = str(random.randint(100000, 999999))
     OTP_DB[req.email] = {"otp": otp, "data": req}
+    try:
     send_otp_email(req.email, otp)
-    return {"message": "OTP sent to your email"}
+except Exception as e:
+    raise HTTPException(status_code=500, detail=f"Email error: {str(e)}")
+return {"message": "OTP sent to your email"}
 
 @app.post("/auth/signup")
 async def signup(email: str = "", otp: str = ""):
