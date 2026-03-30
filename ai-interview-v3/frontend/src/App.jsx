@@ -933,16 +933,24 @@ function AuthPage({ onAuth }) {
   const [showPw, setShowPw]     = useState(false);
   const [error, setError]       = useState("");
   const [loading, setLoading]   = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
 
   async function handleSubmit() {
     setError(""); setLoading(true);
     try {
       let data;
       if (mode === "signup") {
-        data = await post("/auth/signup", { name, email, password, role });
-      } else {
-        data = await post("/auth/login", { email, password });
-      }
+  if (!otpSent) {
+    await post("/auth/send-otp", { name, email, password, role });
+    setOtpSent(true);
+    setLoading(false);
+    return;
+  }
+  data = await post("/auth/signup", { email, otp });
+} else {
+  data = await post("/auth/login", { email, password });
+}
       sessionStorage.setItem("token", data.token);
       sessionStorage.setItem("user",  JSON.stringify(data.user));
       onAuth(data.user);
@@ -1019,6 +1027,14 @@ function AuthPage({ onAuth }) {
               </button>
             </div>
           </div>
+          {mode === "signup" && otpSent && (
+  <div style={{ marginBottom:14 }}>
+    <label style={{ fontSize:11, fontWeight:700, color:"#a1a1aa", display:"block", marginBottom:4 }}>ENTER OTP</label>
+    <input className="input" type="text" placeholder="Enter 6-digit OTP" value={otp}
+      onChange={e => setOtp(e.target.value)}
+      style={{ width:"100%" }}/>
+  </div>
+)}
 
           {error && <div style={{ marginBottom:14, padding:"9px 13px", borderRadius:8, background:"rgba(239,68,68,.1)", border:"1px solid rgba(239,68,68,.25)", color:"#f87171", fontSize:13 }}>{error}</div>}
 
