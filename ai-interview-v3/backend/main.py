@@ -13,6 +13,7 @@ import random
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
+from fastapi import Body
 
 load_dotenv()
 
@@ -159,7 +160,9 @@ async def send_otp(req: SignupRequest):
         raise HTTPException(status_code=500, detail=f"Email error: {str(e)}")
     return {"message": "OTP sent to your email"}
 @app.post("/auth/signup")
-async def signup(email: str = "", otp: str = ""):
+async def signup(req: dict = Body(...)):
+    email = req.get("email", "")
+    otp = req.get("otp", "")
     global OTP_DB
     OTP_DB.update(load_otp_db())
     if email not in OTP_DB:
