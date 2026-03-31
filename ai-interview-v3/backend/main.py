@@ -109,7 +109,21 @@ def get_current_user(authorization: Optional[str] = Header(default=None)):
 
 
 # ─── Auth Models ──────────────────────────────────────────────────────────────
+import tempfile
+import json
+
 OTP_DB = {}
+
+def save_otp_db():
+    with open("/tmp/otp_db.json", "w") as f:
+        json.dump({k: {"otp": v["otp"]} for k, v in OTP_DB.items()}, f)
+
+def load_otp_db():
+    try:
+        with open("/tmp/otp_db.json", "r") as f:
+            return json.load(f)
+    except:
+        return {}
 
 def send_otp_email(email, otp):
     import resend
@@ -138,6 +152,7 @@ async def send_otp(req: SignupRequest):
         raise HTTPException(status_code=400, detail="Email already registered")
     otp = str(random.randint(100000, 999999))
     OTP_DB[req.email] = {"otp": otp, "data": req}
+    save_otp_db()
     try:
         send_otp_email(req.email, otp)
     except Exception as e:
@@ -145,6 +160,8 @@ async def send_otp(req: SignupRequest):
     return {"message": "OTP sent to your email"}
 @app.post("/auth/signup")
 async def signup(email: str = "", otp: str = ""):
+    global OTP_DB
+    OTP_DB.update(load_otp_db())
     if email not in OTP_DB:
         raise HTTPException(status_code=400, detail="OTP not found")
     if OTP_DB[email]["otp"] != otp:
