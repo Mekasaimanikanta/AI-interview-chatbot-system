@@ -112,16 +112,14 @@ def get_current_user(authorization: Optional[str] = Header(default=None)):
 OTP_DB = {}
 
 def send_otp_email(email, otp):
-    sender = "mekasaimanikantams4@gmail.com"
-    password = os.getenv("GMAIL_APP_PASSWORD")
-    msg = MIMEMultipart()
-    msg["From"] = sender
-    msg["To"] = email
-    msg["Subject"] = "Your OTP for AI Interview"
-    msg.attach(MIMEText(f"Your OTP is: {otp}", "plain"))
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(sender, password)
-        server.send_message(msg)
+    import resend
+    resend.api_key = os.getenv("RESEND_API_KEY")
+    resend.Emails.send({
+        "from": "onboarding@resend.dev",
+        "to": email,
+        "subject": "Your OTP for AI Interview",
+        "text": f"Your OTP is: {otp}"
+    })
 class SignupRequest(BaseModel):
     name: str
     email: str
@@ -141,11 +139,10 @@ async def send_otp(req: SignupRequest):
     otp = str(random.randint(100000, 999999))
     OTP_DB[req.email] = {"otp": otp, "data": req}
     try:
-    send_otp_email(req.email, otp)
-except Exception as e:
-    raise HTTPException(status_code=500, detail=f"Email error: {str(e)}")
-return {"message": "OTP sent to your email"}
-
+        send_otp_email(req.email, otp)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Email error: {str(e)}")
+    return {"message": "OTP sent to your email"}
 @app.post("/auth/signup")
 async def signup(email: str = "", otp: str = ""):
     if email not in OTP_DB:
