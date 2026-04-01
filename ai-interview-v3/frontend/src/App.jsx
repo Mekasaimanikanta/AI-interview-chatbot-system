@@ -121,13 +121,12 @@ function WeightedBar({ score, color }) {
   wake()
   const interval = setInterval(wake, 30000)
   return () => clearInterval(interval)
-}, []
-return(
-    <div style={{ height:6, background:"rgba(255,255,255,.07)", borderRadius:4, overflow:"hidden" }}>
+}, [])
+  return (
+    <div style={{ height:6, background: "rgba(255,255,255,.07)", borderRadius:4, overflow:"hidden" }}>
       <div style={{ height:"100%", width:`${w}%`, background:`linear-gradient(90deg,${color},#06b6d4)`, borderRadius:4, transition:"width .9s cubic-bezier(.4,0,.2,1)" }}/>
     </div>
   );
-}
 
 function EvaluationBreakdown({ scores, weighted_total }) {
   return (
