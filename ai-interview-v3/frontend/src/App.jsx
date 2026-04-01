@@ -116,8 +116,13 @@ function AudioBars({ active }) {
 
 function WeightedBar({ score, color }) {
   const [w, setW] = useState(0);
-  useEffect(() => { const t = setTimeout(() => setW(score*10), 100); return () => clearTimeout(t); }, [score]);
-  return (
+  useEffect(() => {
+  const wake = () => fetch("https://ai-interview-chatbot-system.onrender.com/ping")
+  wake()
+  const interval = setInterval(wake, 30000)
+  return () => clearInterval(interval)
+}, []
+return(
     <div style={{ height:6, background:"rgba(255,255,255,.07)", borderRadius:4, overflow:"hidden" }}>
       <div style={{ height:"100%", width:`${w}%`, background:`linear-gradient(90deg,${color},#06b6d4)`, borderRadius:4, transition:"width .9s cubic-bezier(.4,0,.2,1)" }}/>
     </div>
