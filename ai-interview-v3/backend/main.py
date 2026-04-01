@@ -159,10 +159,13 @@ async def send_otp(req: SignupRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Email error: {str(e)}")
     return {"message": "OTP sent to your email"}
+class OTPVerifyRequest(BaseModel):
+    email: str
+    otp: str
 @app.post("/auth/signup")
-async def signup(req: dict = Body(...)):
-    email = req.get("email", "")
-    otp = req.get("otp", "")
+async def signup(req: OTPVerifyRequest):
+    email = req.email
+    otp = req.otp
     global OTP_DB
     OTP_DB.update(load_otp_db())
     if email not in OTP_DB:

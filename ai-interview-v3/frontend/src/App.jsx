@@ -1171,6 +1171,14 @@ export default function App() {
   const [user, setUser] = useState(() => getUser());
   const [page, setPage] = useState("home");
 
+useEffect(() => {
+  fetch("https://ai-interview-chatbot-system.onrender.com")
+  const interval = setInterval(() => {
+    fetch("https://ai-interview-chatbot-system.onrender.com")
+  }, 4 * 60 * 1000)
+  return () => clearInterval(interval)
+}, [])
+
   function handleAuth(u) { setUser(u); setPage(u.role === "hr" ? "recruiter" : "home"); }
   function handleLogout() {
     const t = getToken();
